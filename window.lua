@@ -17,6 +17,9 @@ Window = {
   order = {}, 
   buffer = {}
 }
+tgui = _G.tgui
+windows = tgui.windows
+focusList = tgui.focusList
 
 function Window:set(name,x,y,wbg,wfg,val,vert)
   if not self.buffer[name] then self.order[#self.order + 1] = name end
