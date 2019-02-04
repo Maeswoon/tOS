@@ -26,35 +26,35 @@ dofile("window.lua")
 local function dispatchSignal(signal)
   if signal then
     local name = signal[1]
-    if _G.tgui.listeners[name] and #_G.tgui.listeners[name] > 0 then
-      for k, v in pairs(_G.tgui.listeners[name]) do v(table.unpack(signal)) end
+    if listeners[name] and #listeners[name] > 0 then
+      for k, v in pairs(listeners[name]) do v(table.unpack(signal)) end
     end
   end
 end
 
 -- ### Add Listener ### --
-function _G.tgui.addListener(name, func)
-  _G.tgui.listeners[name][#_G.tgui.listeners[name] + 1] = func
+function tgui.addListener(name, func)
+  listeners[name][#listeners[name] + 1] = func
 end
 
 -- ### Remove Listener ### --
-function _G.tgui.removeListener(name, func)
-  for k,v in pairs(_G.tgui.listeners[name]) do
+function tgui.removeListener(name, func)
+  for k, v in pairs(listeners[name]) do
     if v == func then listener[name][k] = nil break end
   end
 end
 
 -- ### Refresh Window Buffers ### --
-function _G.tgui.refreshBuffer(win) 
-  if _G.tgui.windows[win] then
-    for k, v in pairs(_G.tgui.focusList) do if v == win then _G.tgui.focusList[k] = nil end end
+function tgui.refreshBuffer(win) 
+  if windows[win] then
+    for k, v in pairs(focusList) do if v == win then focusList[k] = nil end end
   end
-  _G.tgui.focusList[#_G.tgui.focusList + 1] = name
-  for k, v in ipairs(_G.tgui.focusList) do _G.tgui.windows[v].buffer() end 
+  focusList[#tgui.focusList + 1] = win.name
+  for k, v in ipairs(focusList) do windows[v].buffer() end 
 end
 
 -- ### Check if Position is Within Parameters ### --
-local function within(a,b)
+local function within(a, b)
   local a1, a2 = table.unpack(a)
   local b1, b2, w, h = table.unpack(b)
   if (a1 >= b1) and (a1 <= ((b1 + w) - 1)) then
@@ -67,44 +67,51 @@ end
 -- ### Handle Click ### --
 local function handleClick(_, _, x, y, _, _)
   local focus = ""
-  for k,v in ipairs(_G.tgui.focusList) do
-    if within(table.pack(x,y),table.pack(_G.tgui.windows[v].x,_G.tgui.windows[v].y,_G.tgui.windows[v].w,_G.tgui.windows[v].h)) then focus = v end
+  for k, v in ipairs(tgui.focusList) do
+    if within(table.pack(x, y), table.pack(windows[v].x, windows[v].y, windows[v].w, windows[v].h)) then focus = v end
   end
     if focus ~= "" then
-      if _G.tgui.focusList[#_G.tgui.focusList] ~= focus then _G.tgui.refreshBuffer(v) end
-      _G.tgui.windows[focus]:handle(x - _G.tgui.windows[focus].x + 1, y - _G.tgui.windows[focus].y + 1)
+      if focusList[#tgui.focusList] ~= focus then tgui.refreshBuffer(v) end
+      windows[focus]:handle(x - windows[focus].x + 1, y - windows[focus].y + 1)
     end
 end
 
 
 -- ### Add Window ### --
-function _G.tgui.addWindow(name, x, y, w, h, color, textColor, borders, barColor)
-  if _G.tgui.windows[name] then _G.tgui.windows[name]:close() end
-  _G.tgui.focusList[#_G.tgui.focusList + 1] = name
-  _G.tgui.windows[name] = Window(name, x, y, w, h, color, textColor, borders, barColor)
+function tgui.addWindow(name, x, y, w, h, color, textColor, borders, barColor)
+  if windows[name] then windows[name]:close() end
+  focusList[#tgui.focusList + 1] = name
+  windows[name] = Window(name, x, y, w, h, color, textColor, borders, barColor)
 end
   
 --------------------------
 -- ### Finalization ### --
 --------------------------
 
-viewport = _G.tgui.addWindow("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF, _, _)
-for _, v in pairs(signals) do _G.tgui.listeners[v] = {} end
-_G.tgui.addListener("touch", handleClick)
+viewport = tgui.addWindow("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF, _, _)
+for _, v in pairs(signals) do listeners[v] = {} end
+tgui.addListener("touch", handleClick)
+
+tgui.threadDaemon = coroutine.create(function() 
+  local time = os.time() + 100
+  while os.time() > time do
+    for k, v in pairs(tgui.threads) do v() end
+    time = os.time() + 100
+  end
+end)
   
-_G.tgui.proc = coroutine.create(function()
+tgui.signalDaemon = coroutine.create(function()
   while true do
     local args = table.pack(computer.pullSignal(0.5))
     dispatchSignal(args)
-    for k, v in pairs(_G.tgui.threads) do v() end
-    os.sleep(0.1)
   end
 end)
 
-function _G.tgui.init()
-  coroutine.resume(_G.tgui.proc)
+function tgui.init()
+  coroutine.resume(tgui.signalDaemon)
+  coroutine.resume(tgui.threadDaemon)
 end
 
-function _G.tgui.halt()
+function tgui.halt()
   coroutine.yield()
 end
