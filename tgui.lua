@@ -13,7 +13,12 @@ local event = require("event")
 local gpu = component.proxy(component.list("gpu")())
 local screenWidth, screenHeight = gpu.getResolution()
 _G.tgui = {}
-_G.tgui.windows, _G.tgui.listeners, _G.tgui.threads, _G.tgui.focusList = {}, {}, {}, {}
+tgui = _G.tgui
+tgui.windows, tgui.listeners, tgui.threads, tgui.focusList = {}, {}, {}, {}
+windows = tgui.windows
+listeners = tgui.listeners
+threads = tgui.threads
+focusList = tgui.focusList
 signals = {"component_available", "component_unavailable", "component_added", "component_removed", "term_available", "term_unavailable", "screen_resized", "touch", "drag", "drop", "scroll", "walk", "key_down", "key_up", "clipboard", "redstone_changed", "motion", "modem_message", "inventory_changed", "bus_message", "carriage_moved"}
 dofile("window.lua")
 
