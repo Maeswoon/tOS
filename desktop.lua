@@ -4,6 +4,11 @@
 
 -- Library Retrieval
 dofile("tgui.lua")
+tgui = _G.tgui
+local windows = tgui.windows
+local focusList = tgui.focusList
+local threads = tgui.threads
+local viewport = windows["viewport"]
 local gpu = require("component").proxy(require("component").list("gpu")())
 local computer = require("computer")
 local bg = gpu.getBackground()
@@ -47,7 +52,7 @@ viewport:addButton("menu", 1, 48, 8, 3, 0x009933, 0x000000, "Menu", setmetatable
 end}))
 viewport:set("clockbar_left", 149, 48, 0xAFAFAF, 0x000000, vBar(3), true)
 viewport:set("clockbar_right", 160, 48, 0xAFAFAF, 0x000000, vBar(3), true)
-updateVars["clock"] = setmetatable({}, { __call = function() 
+threads["clock"] = setmetatable({}, { __call = function() 
   viewport:set("time", 151, 49, 0xAFAFAF, 0x000000, os.date("%I"..":".."%M".." ".."%p"), false) 
 end })
 

@@ -93,10 +93,10 @@ for _, v in pairs(signals) do listeners[v] = {} end
 tgui.addListener("touch", handleClick)
 
 tgui.threadDaemon = coroutine.create(function() 
-  local time = os.time() + 100
+  local time = os.time() + 1000
   while os.time() > time do
     for k, v in pairs(tgui.threads) do v() end
-    time = os.time() + 100
+    time = os.time() + 1000
   end
 end)
   

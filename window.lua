@@ -18,10 +18,11 @@ Window = {
   buffer = {}
 }
 tgui = _G.tgui
+local gpu = require("component").proxy(require("component").list("gpu")())
 windows = tgui.windows
 focusList = tgui.focusList
 
-function Window:set(self, name, x, y, wbg, wfg, val, vert)
+function Window:set(name, x, y, wbg, wfg, val, vert)
   if not self.buffer[name] then self.order[#self.order + 1] = name end
   if vert then
     self.buffer[name] = setmetatable({
@@ -57,7 +58,7 @@ function Window:set(self, name, x, y, wbg, wfg, val, vert)
   self.buffer()
 end
 
-function Window:fill(self, name, x, y, w, h, wbg, wfg, val)
+function Window:fill(name, x, y, w, h, wbg, wfg, val)
   if not self.buffer[name] then self.order[#self.order + 1] = name end
   self.buffer[name] = setmetatable({
     bg = wbg,
@@ -78,7 +79,7 @@ function Window:fill(self, name, x, y, w, h, wbg, wfg, val)
   self.buffer()
 end
 
-function Window:toggle(self, name)
+function Window:toggle(name)
   if self.buffer[name] then self.buffer[name].hidden = not self.buffer[name].hidden end
   if self.buffer[name].children then
     for k, v in pairs(self.buffer[name].children) do self:toggle(v) end
@@ -86,7 +87,7 @@ function Window:toggle(self, name)
   self.buffer()
 end
 
-function Window:show(self, name)
+function Window:show(name)
   if self.buffer[name] then self.buffer[name].hidden = false end
   if self.buffer[name].children then
     for k, v in pairs(self.buffer[name].children) do self:show(v) end
@@ -94,7 +95,7 @@ function Window:show(self, name)
   self.buffer()
 end
 
-function Window:hide(self, name)
+function Window:hide(name)
   if self.buffer[name] then self.buffer[name].hidden = true end
   if self.buffer[name].children then
     for k, v in pairs(self.buffer[name].children) do self:hide(v) end
@@ -102,21 +103,21 @@ function Window:hide(self, name)
   self.buffer()
 end
 
-function Window:getResolution(self) return self.w, self.h end
+function Window:getResolution() return self.w, self.h end
 
-function Window:setResolution(self, width, height) 
+function Window:setResolution(width, height) 
   self.w = width
   self.h = height
   self.buffer()
 end
 
-function Window:remove(self, name)
+function Window:remove(name)
   for k, v in pairs(self.order) do if v == name then self.order[k] = nil break end end
   self.buffer[name] = nil
 end
 
-function Window.drawFrame(self, x, y, width, height, color, borders, colBar)
-  if borders then local left, right, top, bottom, frameColor = table.unpack(borders) end
+function Window:drawFrame(x, y, width, height, color, borders, colBar)
+  if borders ~= nil then local left, right, top, bottom, frameColor = table.unpack(borders) end
   if not frameColor then frameColor = color end
   self:fill("window-body", x, y, width, height, color, color, " ")
   if borders then
@@ -164,7 +165,7 @@ function Window:addButton(name, x, y, w, h, bg, fg, text, onClick)
   self.components["button/"..name].h = h
   self.components["button/"..name].x = x
   self.components["button/"..name].y = y
-  self.buffer["button/"..name].children = {"button-body/"..name, "button-label/"..name}
+  self.buffer["button/"..name] = {children = {"button-body/"..name, "button-label/"..name}}
   self.handlers["button/"..name] = setmetatable({}, {
     __call = function(_, a, b)
       if within(table.pack(a, b), table.pack(self.components["button/"..name].x, self.components["button/"..name].y, self.components["button/"..name].w, self.components["button/"..name].h)) then onClick() end
@@ -225,8 +226,7 @@ function Window:close()
   self = nil
 end
 
-setmetatable(Window, {__call = function(name, x, y, w, h, color, textColor, borders, barColor)
-    self = Window
+setmetatable(Window, {__call = function(self, name, x, y, w, h, color, textColor, borders, barColor)
     self.x = x 
     self.y = y
     self.w = w
@@ -249,7 +249,7 @@ setmetatable(Window, {__call = function(name, x, y, w, h, color, textColor, bord
         for k, v in pairs(focusList) do
           if v == self.name then
             for i=k+1,#focusList do
-              windows[v].buffer()
+              selfdows[v].buffer()
             end
             break
           end
@@ -258,11 +258,11 @@ setmetatable(Window, {__call = function(name, x, y, w, h, color, textColor, bord
     if barColor and borders then 
       self:drawFrame(x, y, w, h, color, borders, barColor) 
       if unicode.len(name) > w - 3 then
-        name = name:sub(1, unicode.len(name) - (unicode.len(name) - (w - 6)))
-        name = name .. "..."
+      name = name:sub(1, unicode.len(name) - (unicode.len(name) - (w - 6)))
+      name = name .. "..."
       end
-      self:addButton("close-window/" .. name, x + w - 4, y, 3, 1, 0xFF0000, 0xFFFFFF, "X", setmetatable({}, {__call = function() self:close() end}))
-      self:set("window-title/"..name, x, y, barColor, 0xFFFFFF, name)
+      self:addButton("close-selfdow/" .. name, x + w - 4, y, 3, 1, 0xFF0000, 0xFFFFFF, "X", setmetatable({}, {__call = function() self:close() end}))
+      self:set("selfdow-title/"..name, x, y, barColor, 0xFFFFFF, name)
     elseif borders then 
       self:drawFrame(x, y, w, h, color, borders, _) 
     else
@@ -271,4 +271,4 @@ setmetatable(Window, {__call = function(name, x, y, w, h, color, textColor, bord
     self.buffer()
     return self
   end
-}})
+})
