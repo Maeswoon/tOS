@@ -88,7 +88,7 @@ end
 -- ### Finalization ### --
 --------------------------
 
-viewport = tgui.addWindow("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF, _, _)
+viewport = tgui.addWindow("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF, nil, nil)
 for _, v in pairs(signals) do listeners[v] = {} end
 tgui.addListener("touch", handleClick)
 
