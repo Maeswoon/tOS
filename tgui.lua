@@ -10,6 +10,7 @@ local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
 local event = require("event")
+dofile("func.lua")
 local gpu = component.proxy(component.list("gpu")())
 local screenWidth, screenHeight = gpu.getResolution()
 _G.tgui = {}
