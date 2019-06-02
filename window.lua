@@ -4,6 +4,13 @@
 ||-- ######## WRITTEN BY MAESWOON ####### --||
 ||------------------------------------------||
 ]]--
+local gpu = require("component").proxy(require("component").list("gpu")())
+local unicode = require("unicode")
+dofile("func.lua")
+tgui = _G.tgui
+windows = tgui.windows
+focusList = tgui.focusList
+
 Window = {
   x = 0, 
   y = 0, 
@@ -17,65 +24,67 @@ Window = {
   order = {}, 
   buffer = {}
 }
-tgui = _G.tgui
-local gpu = require("component").proxy(require("component").list("gpu")())
-windows = tgui.windows
-focusList = tgui.focusList
 
 function Window:set(name, x, y, wbg, wfg, val, vert)
   if not self.buffer[name] then self.order[#self.order + 1] = name end
   if vert then
-    self.buffer[name] = setmetatable({
-      bg = wbg,
-      fg = wfg,
-      x = x,
-      y = y,
-      hidden = false
-    }, {
-      __call = function()
-      gpu.setBackground(wbg)
-      gpu.setForeground(wfg)
-      if (y - self.y + unicode.len(val) - 2) <= self.h and x <= (self.x + self.w - 1) and x >= self.x and not self.buffer[name].hidden then
-        gpu.set(x, y, val, vert)
-      end
-    end })
+    self.buffer[name] = tgui.obj( 
+      function()
+        gpu.setBackground(wbg)
+        gpu.setForeground(wfg)
+        if (y - self.y + unicode.len(val) - 2) <= self.h and x <= (self.x + self.w - 1) and x >= self.x and not self.buffer[name].hidden then
+          gpu.set(x, y, val, vert)
+        end
+      end, 
+      {
+        bg = wbg,
+        fg = wfg,
+        x = x,
+        y = y,
+        hidden = false
+      }
+    )
   else
-    self.buffer[name] = setmetatable({
-      bg = wbg,
-      fg = wfg,
-      x = x,
-      y = y,
-      hidden = false
-    }, {
-      __call = function()
-      gpu.setBackground(wbg)
-      gpu.setForeground(wfg)
-      if (x - self.x + unicode.len(val) - 2) <= self.w and y <= (self.y + self.h - 1) and y >= self.y and not self.buffer[name].hidden then
-        gpu.set(x, y, val)
-      end
-    end })
+    self.buffer[name] = tgui.obj( 
+      function()
+        gpu.setBackground(wbg)
+        gpu.setForeground(wfg)
+        if (x - self.x + unicode.len(val) - 2) <= self.w and y <= (self.y + self.h - 1) and y >= self.y and not self.buffer[name].hidden then
+          gpu.set(x, y, val)
+        end
+      end, 
+      {
+        bg = wbg,
+        fg = wfg,
+        x = x,
+        y = y,
+        hidden = false
+      }
+    )
   end
   self.buffer()
 end
 
 function Window:fill(name, x, y, w, h, wbg, wfg, val)
   if not self.buffer[name] then self.order[#self.order + 1] = name end
-  self.buffer[name] = setmetatable({
-    bg = wbg,
-    fg = wfg,
-    x = x,
-    y = y,
-    w = w,
-    h = h,
-    hidden = false
-    }, {
-    __call = function()
+  self.buffer[name] = tgui.symfunc(
+    function()
       if (self.buffer[name].x + self.x + w - 2) <= self.w and (self.buffer[name].y - self.y + h - 2) <= self.h and not self.buffer[name].hidden then 
       gpu.setBackground(wbg)
       gpu.setForeground(wfg)
       gpu.fill(self.buffer[name].x + self.x - 1, self.buffer[name].y + self.y - 1, self.buffer[name].w, self.buffer[name].h, val)
       end
-    end })
+    end, 
+    {
+      bg = wbg,
+      fg = wfg,
+      x = x,
+      y = y,
+      w = w,
+      h = h,
+      hidden = false
+    }
+  )
   self.buffer()
 end
 
@@ -166,10 +175,11 @@ function Window:addButton(name, x, y, w, h, bg, fg, text, onClick)
   self.components["button/"..name].x = x
   self.components["button/"..name].y = y
   self.buffer["button/"..name] = {children = {"button-body/"..name, "button-label/"..name}}
-  self.handlers["button/"..name] = setmetatable({}, {
-    __call = function(_, a, b)
+  self.handlers["button/"..name] = tgui.obj(
+    function(_, a, b)
       if within(table.pack(a, b), table.pack(self.components["button/"..name].x, self.components["button/"..name].y, self.components["button/"..name].w, self.components["button/"..name].h)) then onClick() end
-    end })
+    end 
+  )
   self:fill("button-body/"..name, x, y, w, h, bg, bg, " ")
   if text then
     self:set("button-label/"..name, math.ceil(w / 2) + x - math.ceil(unicode.len(text:sub(1, w - 2)) / 2), math.floor(h / 2) + y, bg, fg, text:sub(1, w - 2))
@@ -194,18 +204,19 @@ function Window:addSwitch(name, x, y, bg, fg, f)
     bg = bg,
     fg = fg
   } 
-  self:addButton("switch/" .. name, x, y, 3, 1, bg, fg, _, setmetatable({}, {
-  __call = function() 
-    self.components[name].stat = not self.components[name].stat 
-    self.components[name].toggle()
-    if self.components[name].stat then
-      self:set("switch-body/"..name, self.components[name].x, self.components[name].y, 0xD3D3D3, 0xD3D3D3, "  ")
-      self:set("switch-box/"..name, self.components[name].x + 2, self.components[name].y, 0x00008B, 0x00008B," ")
-    else
-      self:set("switch-body/"..name, self.components[name].x + 1, self.components[name].y, 0xD3D3D3, 0xD3D3D3, "  ")
-      self:set("switch-box/"..name, self.components[name].x, self.components[name].y, 0x8C8C8C, 0x8C8C8C, " ")
-    end
-  end }))
+  self:addButton("switch/" .. name, x, y, 3, 1, bg, fg, _, tgui.obj(
+    function() 
+      self.components[name].stat = not self.components[name].stat 
+      self.components[name].toggle()
+      if self.components[name].stat then
+        self:set("switch-body/"..name, self.components[name].x, self.components[name].y, 0xD3D3D3, 0xD3D3D3, "  ")
+        self:set("switch-box/"..name, self.components[name].x + 2, self.components[name].y, 0x00008B, 0x00008B," ")
+      else
+        self:set("switch-body/"..name, self.components[name].x + 1, self.components[name].y, 0xD3D3D3, 0xD3D3D3, "  ")
+        self:set("switch-box/"..name, self.components[name].x, self.components[name].y, 0x8C8C8C, 0x8C8C8C, " ")
+      end
+    end 
+  )
   self:set("switch-body/"..name, self.components[name].x + 1, self.components[name].y, 0xD3D3D3, 0xD3D3D3, "  ")
   self:set("switch-box/"..name, self.components[name].x, self.components[name].y, 0x8C8C8C, 0x8C8C8C, " ")
 end
@@ -226,7 +237,8 @@ function Window:close()
   self = nil
 end
 
-setmetatable(Window, {__call = function(self, name, x, y, w, h, color, textColor, borders, barColor)
+Window = tgui.obj(
+  function(self, name, x, y, w, h, color, textColor, borders, barColor)
     self.x = x 
     self.y = y
     self.w = w
@@ -270,5 +282,6 @@ setmetatable(Window, {__call = function(self, name, x, y, w, h, color, textColor
     end
     self.buffer()
     return self
-  end
-})
+  end,
+  Window
+)
