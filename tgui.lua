@@ -10,6 +10,7 @@ local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
 local event = require("event")
+dofile("func.lua")
 local gpu = component.proxy(component.list("gpu")())
 local screenWidth, screenHeight = gpu.getResolution()
 _G.tgui = {}
@@ -57,7 +58,7 @@ end
 local function handleClick(_, _, x, y, _, _)
   local focus = ""
   for k, v in ipairs(tgui.focusList) do
-    if within(table.pack(x, y), table.pack(windows[v].x, windows[v].y, windows[v].w, windows[v].h)) then focus = v end
+    if tgui.within(table.pack(x, y), table.pack(windows[v].x, windows[v].y, windows[v].w, windows[v].h)) then focus = v end
   end
     if focus ~= "" then
       if focusList[#tgui.focusList] ~= focus then tgui.refreshBuffer(v) end
