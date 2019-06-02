@@ -53,17 +53,6 @@ function tgui.refreshBuffer(win)
   for k, v in ipairs(focusList) do windows[v].buffer() end 
 end
 
--- ### Check if Position is Within Parameters ### --
-local function within(a, b)
-  local a1, a2 = table.unpack(a)
-  local b1, b2, w, h = table.unpack(b)
-  if (a1 >= b1) and (a1 <= ((b1 + w) - 1)) then
-    if (a2 >= b2) and (a2 <= ((b2 + h) - 1)) then
-      return true
-    else return false end
-  else return false end
-end
-
 -- ### Handle Click ### --
 local function handleClick(_, _, x, y, _, _)
   local focus = ""
@@ -75,7 +64,6 @@ local function handleClick(_, _, x, y, _, _)
       windows[focus]:handle(x - windows[focus].x + 1, y - windows[focus].y + 1)
     end
 end
-
 
 -- ### Add Window ### --
 function tgui.addWindow(name, x, y, w, h, color, textColor, borders, barColor)
@@ -91,12 +79,16 @@ end
 viewport = tgui.addWindow("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF, nil, nil)
 for _, v in pairs(signals) do listeners[v] = {} end
 tgui.addListener("touch", handleClick)
+tgui.HALT = false
 
 tgui.threadDaemon = coroutine.create(function() 
   local time = os.time() + 1000
   while os.time() > time do
     for k, v in pairs(tgui.threads) do v() end
     time = os.time() + 1000
+  end
+  if tgui.HALT then
+    coroutine.yield()
   end
 end)
   
@@ -113,5 +105,5 @@ function tgui.init()
 end
 
 function tgui.halt()
-  coroutine.yield()
+  tgui.HALT = true
 end
