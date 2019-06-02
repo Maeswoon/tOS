@@ -71,6 +71,10 @@ function tgui.addWindow(name, x, y, w, h, color, textColor, borders, barColor)
   focusList[#tgui.focusList + 1] = name
   windows[name] = Window(name, x, y, w, h, color, textColor, borders, barColor)
 end
+
+function tgui.loadASCII(path)
+  return dofile(path)
+end
   
 --------------------------
 -- ### Finalization ### --
@@ -81,27 +85,14 @@ for _, v in pairs(signals) do listeners[v] = {} end
 tgui.addListener("touch", handleClick)
 tgui.HALT = false
 
-tgui.threadDaemon = coroutine.create(function() 
-  local time = os.time() + 1000
-  while os.time() > time do
-    for k, v in pairs(tgui.threads) do v() end
-    time = os.time() + 1000
-  end
-  if tgui.HALT then
-    coroutine.yield()
-  end
-end)
-  
-tgui.signalDaemon = coroutine.create(function()
-  while true do
-    local args = table.pack(computer.pullSignal(0.5))
-    dispatchSignal(args)
-  end
-end)
-
 function tgui.init()
-  coroutine.resume(tgui.signalDaemon)
-  coroutine.resume(tgui.threadDaemon)
+  while true do
+    if tgui.HALT then
+      break
+    end
+    for k, v in pairs(tgui.threads) do v() end
+    dispatchSignal(table.pack(computer.pullSignal()))
+  end
 end
 
 function tgui.halt()

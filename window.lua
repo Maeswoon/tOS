@@ -18,6 +18,7 @@ Window = {
   buffer = {}
 }
 tgui = _G.tgui
+local unicode = require("unicode")
 local gpu = require("component").proxy(require("component").list("gpu")())
 windows = tgui.windows
 focusList = tgui.focusList
