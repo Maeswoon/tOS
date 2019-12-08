@@ -23,7 +23,7 @@ menu.items = {
     label = "Add Window",
     func = setmetatable({}, {__call = function() 
       windows.test_window = Window("test_window", 20, 20, 40, 20, 0x33F, 0x000)
-      windows.test_window:init(_, _)
+      windows.test_window:init(0x33F, _, _)
     end}) },
 }
 
@@ -50,6 +50,7 @@ viewport:addButton("menu", 1, 48, 8, 3, 0x009933, 0x000000, "Menu", setmetatable
 end}))
 viewport:set("clockbar_left", 149, 48, 0xAFAFAF, 0x000000, vBar(3), true)
 viewport:set("clockbar_right", 160, 48, 0xAFAFAF, 0x000000, vBar(3), true)
+--[[
 updateVars["clock"] = setmetatable({}, { __call = function() 
   viewport:set("time", 151, 49, 0xAFAFAF, 0x000000, os.date("%I"..":".."%M".." ".."%p"), false) 
 end })
@@ -81,27 +82,35 @@ threads.memoryCounter = setmetatable({}, {__call = function()
   tmStr = tmStr .. string.rep(" ", math.abs(5 - #tmStr))
   viewport:set("memoryCounter", 131, 49, 0xAFAFAF, 0x000000, "MEM: " .. fmStr .. " / " .. tmStr, false)
 end})
+]]
 
 logo = {
-  "      ___          ___          ___     ",
-  "     /\\  \\        /\\  \\        /\\  \\    ",
-  "     \\:\\  \\      /::\\  \\      /::\\  \\   ",
-  "      \\:\\  \\    /:/\\:\\  \\    /:/\\ \\  \\  ",
-  "      /::\\  \\  /:/  \\:\\  \\  _\\:\\~\\ \\  \\ ",
-  "     /:/\\:\\__\\/:/__/ \\:\\__\\/\\ \\:\\ \\ \\__\\",
-  "    /:/  \\/__/\\:\\  \\ /:/  /\\:\\ \\:\\ \\/__/",
-  "   /:/  /      \\:\\  /:/  /  \\:\\ \\:\\__\\  ",
-  "   \\/__/        \\:\\/:/  /    \\:\\/:/  /  ",
-  "                 \\::/  /      \\::/  /   ",
-  "                  \\/__/        \\/__/    "
+  "         _____                   _______                   _____            ", 
+  "        /\\    \\                 /::\\    \\                 /\\    \\           ", 
+  "       /::\\    \\               /::::\\    \\               /::\\    \\          ", 
+  "       \\:::\\    \\             /::::::\\    \\             /::::\\    \\         ", 
+  "        \\:::\\    \\           /::::::::\\    \\           /::::::\\    \\        ", 
+  "         \\:::\\    \\         /:::/~~\\:::\\    \\         /:::/\\:::\\    \\       ", 
+  "          \\:::\\    \\       /:::/    \\:::\\    \\       /:::/__\\:::\\    \\      ", 
+  "          /::::\\    \\     /:::/    / \\:::\\    \\      \\:::\\   \\:::\\    \\     ", 
+  "         /::::::\\    \\   /:::/____/   \\:::\\____\\   ___\\:::\\   \\:::\\    \\    ", 
+  "        /:::/\\:::\\    \\ |:::|    |     |:::|    | /\\   \\:::\\   \\:::\\    \\   ", 
+  "       /:::/  \\:::\\____\\|:::|____|     |:::|    |/::\\   \\:::\\   \\:::\\____\\  ", 
+  "      /:::/    \\::/    / \\:::\\    \\   /:::/    / \\:::\\   \\:::\\   \\::/    /  ", 
+  "     /:::/    / \\/____/   \\:::\\    \\ /:::/    /   \\:::\\   \\:::\\   \\/____/   ", 
+  "    /:::/    /             \\:::\\    /:::/    /     \\:::\\   \\:::\\    \\       ", 
+  "   /:::/    /               \\:::\\__/:::/    /       \\:::\\   \\:::\\____\\      ", 
+  "   \\::/    /                 \\::::::::/    /         \\:::\\  /:::/    /      ", 
+  "    \\/____/                   \\::::::/    /           \\:::\\/:::/    /       ", 
+  "                               \\::::/    /             \\::::::/    /        ", 
+  "                                \\::/____/               \\::::/    /         ", 
+  "                                 ~~                      \\::/    /          ", 
+  "                                                          \\/____/           ", 
+  "                                                                          "
 }
 
 for k, v in ipairs(logo) do
-  viewport:set("logo_row"..tostring(k), 59, 19 + k, 0x54B8F7, 0x000000, v, false)
-end
-
-for k, v in pairs(viewport.order) do
-  viewport:set("viewport_debug_"..tostring(k), 10, 10, 0x54B8F7, 0x000000, v, false)
+  viewport:set("logo_row"..tostring(k), 40, 14 + k, 0x54B8F7, 0x000000, v, false)
 end
 
 viewport:addButton("halt", 151, 1, 10, 3, 0xFF0000, 0x000000, "Halt", setmetatable({}, {__call = function() tgui.halt() end})) 

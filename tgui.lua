@@ -13,6 +13,7 @@ local event = require("event")
 local gpu = component.proxy(component.list("gpu")())
 local screenWidth, screenHeight = gpu.getResolution()
 _G.tgui = {}
+_G.tgui_halted = false
 tgui = _G.tgui
 tgui.windows, tgui.listeners, tgui.threads, tgui.focusList = {}, {}, {}, {}
 windows = tgui.windows
@@ -34,8 +35,8 @@ function Window(name, x, y, w, h, bg, fg)
     components = {},
     handlers = {},
     order = {},
-    buffer = setmetatable({}, { 
-      __call = function(self) 
+    buffer = {},
+    refresh = function(self) 
         for k, v in ipairs(self.order) do 
           if self.buffer[v] then 
             self.buffer[v]() 
@@ -46,13 +47,12 @@ function Window(name, x, y, w, h, bg, fg)
         for k, v in pairs(focusList) do
           if v == self.name then
             for i=k+1,#focusList do
-              windows[v]:buffer()
+            windows[v]:refresh()
             end
             break
           end
         end
-      end 
-    }),
+    end,
     set = function(self, name, x, y, wbg, wfg, val, vert)
       if not self.buffer[name] then self.order[#self.order + 1] = name end
       if vert then
@@ -86,7 +86,7 @@ function Window(name, x, y, w, h, bg, fg)
           end
         end })
       end
-      self:buffer()
+      self:refresh()
     end,
     fill = function(self, name, x, y, w, h, wbg, wfg, val)
       if not self.buffer[name] then self.order[#self.order + 1] = name end
@@ -101,39 +101,40 @@ function Window(name, x, y, w, h, bg, fg)
         }, {
         __call = function()
           if (self.buffer[name].x + self.x + w - 2) <= self.w and (self.buffer[name].y - self.y + h - 2) <= self.h and not self.buffer[name].hidden then 
-          gpu.setBackground(wbg)
-          gpu.setForeground(wfg)
+              gpu.setBackground(self.buffer[name].bg)
+              gpu.setForeground(self.buffer[name].fg)
           gpu.fill(self.buffer[name].x + self.x - 1, self.buffer[name].y + self.y - 1, self.buffer[name].w, self.buffer[name].h, val)
           end
-        end })
-      self:buffer()
+          end 
+        })
+      self:refresh()
     end,
     toggle = function(self, name)
       if self.buffer[name] then self.buffer[name].hidden = not self.buffer[name].hidden end
       if self.buffer[name].children then
         for k, v in pairs(self.buffer[name].children) do self:toggle(v) end
       end    
-      self:buffer()
+      self:refresh()
     end,
     show = function(self, name)
       if self.buffer[name] then self.buffer[name].hidden = false end
       if self.buffer[name].children then
         for k, v in pairs(self.buffer[name].children) do self:show(v) end
       end    
-      self:buffer()
+      self:refresh()
     end,
     hide = function(self, name)
       if self.buffer[name] then self.buffer[name].hidden = true end
       if self.buffer[name].children then
         for k, v in pairs(self.buffer[name].children) do self:hide(v) end
       end    
-      self:buffer()
+      self:refresh()
     end,
     getResolution = function(self) return self.w, self.h end,
     setResolution = function(self, w, h)
       self.w = w
       self.w = h
-      self:buffer()
+      self:refresh()
     end,
     remove = function(self, name)
       for k, v in pairs(self.order) do if v == name then self.order[k] = nil break end end
@@ -172,16 +173,17 @@ function Window(name, x, y, w, h, bg, fg)
           self:fill("window-bar", x, y, width, 1, colBar, colBar, " ")
         end
       end  
-      self:buffer()
+      self:refresh()
     end,
     handle = function(self, x, y) for _, f in pairs(self.handlers) do f(x, y) end end,
     addButton = function(self, name, x, y, w, h, bg, fg, text, onClick)
-      self.components["button/"..name] = {}
-      self.components["button/"..name].w = w
-      self.components["button/"..name].h = h
-      self.components["button/"..name].x = x
-      self.components["button/"..name].y = y
-      self.buffer["button/"..name].children = {"button-body/"..name, "button-label/"..name}
+      self.components["button/"..name] = {
+        x = x, 
+        y = y,
+        w = w,
+        h = h,
+      }
+      self.buffer["button/"..name] = {children = {"button-body/"..name, "button-label/"..name}}
       self.handlers["button/"..name] = setmetatable({}, {
         __call = function(_, a, b)
           if within(table.pack(a, b), table.pack(self.components["button/"..name].x, self.components["button/"..name].y, self.components["button/"..name].w, self.components["button/"..name].h)) then onClick() end
@@ -224,16 +226,16 @@ function Window(name, x, y, w, h, bg, fg)
     shift = function(self, x, y)
       self.x = x
       self.y = y
-      self:buffer()
+      self:refresh()
     end,
     close = function(self)
       windows[self.name] = nil
-      for k, v in pairs(focusList)
+      for k, v in pairs(focusList) do
         if v == self.name then focusList[k] = nil end
       end
       self = nil
     end,
-    init = function(self, borders, bar)
+    init = function(self, color, borders, bar)
       focusList[#tgui.focusList + 1] = self.name
       if bar and borders then 
         self:drawFrame(x, y, w, h, color, borders, bar) 
@@ -248,21 +250,11 @@ function Window(name, x, y, w, h, bg, fg)
       else
         self:drawFrame(x, y, w, h, color, _, _) 
       end
-      self:buffer()
+      self:refresh()
     end
   }
 
   return window
-end
-
--- ### Dispatch Signal ### --
-local function dispatchSignal(signal)
-  if signal then
-    local name = signal[1]
-    if listeners[name] and #listeners[name] > 0 then
-      for k, v in pairs(listeners[name]) do v(table.unpack(signal)) end
-    end
-  end
 end
 
 -- ### Add Listener ### --
@@ -277,13 +269,22 @@ function tgui.removeListener(name, func)
   end
 end
 
+-- ### Dispatch Signal ### --
+local function dispatchSignal(signal)
+  if signal then
+    if listeners[signal[1]] then
+      for k, v in pairs(listeners[signal[1]]) do v(table.unpack(signal)) end
+    end
+  end
+end
+
 -- ### Refresh Window Buffers ### --
 function tgui.refreshBuffer(win) 
   if windows[win] then
     for k, v in pairs(focusList) do if v == win then focusList[k] = nil end end
   end
   focusList[#tgui.focusList + 1] = win.name
-  for k, v in ipairs(focusList) do windows[v]:buffer() end 
+  for k, v in ipairs(focusList) do windows[v]:refresh() end 
 end
 
 -- ### Check if Position is Within Parameters ### --
@@ -312,24 +313,21 @@ end
 -- ### Finalization ### --
 --------------------------
 
-windows.viewport = Window("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0xFFFFFF)
+windows.viewport = Window("viewport", 1, 1, screenWidth, screenHeight, 0x54B8F7, 0x00)
 viewport = windows.viewport
-viewport:init(_, _)
+viewport:init(0x54B8F7, _, _)
 
 for _, v in pairs(signals) do listeners[v] = {} end
 tgui.addListener("touch", handleClick)
 
-tgui.signalDaemon = coroutine.create(function()
-  while true do
-    local args = table.pack(computer.pullSignal(0.5))
-    dispatchSignal(args)
-  end
-end)
-
 function tgui.init()
-  coroutine.resume(tgui.signalDaemon)
+  while not _G.tgui_halted do
+    local args = table.pack(computer.pullSignal(0.5, "touch"))
+    dispatchSignal(args)
+    for k, v in pairs(threads) do v() end
+  end
 end
 
 function tgui.halt()
-  coroutine.yield()
+  _G.tgui_halted = true
 end
