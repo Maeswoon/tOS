@@ -21,8 +21,11 @@ menu.items = {
     func = setmetatable({}, {__call = function() computer.beep(300) end}) },
   { name = "add_window",
     label = "Add Window",
-    func = setmetatable({}, {__call = function() tgui.addWindow("TestWindow", 16, 5, 128, 40, 0x000000, 0xFFFFFF, _, _) end}) },
-  }
+    func = setmetatable({}, {__call = function() 
+      windows.test_window = Window("test_window", 20, 20, 40, 20, 0x33F, 0x000)
+      windows.test_window:init(_, _)
+    end}) },
+}
 
 --Setup Taskbar and Clock 
 viewport:fill("taskbar", 1, 48, 160, 3, 0xAFAFAF, 0x000000, " ")
